@@ -29,9 +29,44 @@
 // Using of the "scls" namespace to simplify the programmation
 namespace scls {
     namespace demo {
+
         //*********
         //
-        // Snake mains members
+        // Snake_Total class
+        //
+        //*********
+
+        // Snake_Total constructor
+        Snake_Total::Snake_Total(Window& window, std::string name) : a_name(name), a_window(window) {
+            pieces_x().push_back(0);
+            pieces_y().push_back(0);
+        }
+
+        //*********
+        //
+        // The Snake_Object class
+        //
+        //*********
+
+        // Snake_Object constructor
+        Snake_Object::Snake_Object(Window& window, std::string name, GUI_Object* parent) : GUI_Object(window, name, parent) { }
+
+        //*********
+        //
+        // The Snake_Piece class
+        //
+        //*********
+
+        // Snake_Piece constructor
+        Snake_Piece::Snake_Piece(Window& window, std::string name, GUI_Object* parent) : Snake_Object(window, name, parent) {
+            set_background_color(Color(51, 255, 51));
+            set_texture_alignment(Alignment_Texture::T_Fit);
+            set_type("snake");
+        }
+
+        //*********
+        //
+        // Snake class
         //
         //*********
 
@@ -40,54 +75,256 @@ namespace scls {
             set_background_color(Color(0, 0, 0));
 
             // Create the page
-            gui = new_page<GUI_Page>("gui");
-            gui->set_scale(glm::vec3(2, 2, 1));
-            gui->parent_object()->set_background_color(scls::Color(0, 0, 0));
-            gui->parent_object()->set_position_in_pixel(0, 0);
-            gui->parent_object()->set_height_in_scale(scls::Fraction(1));
-            gui->parent_object()->set_width_in_scale(scls::Fraction(1));
-            display_page("gui");
+            a_gui = new_page_2d<GUI_Page>("gui");
+            a_gui->set_scale(glm::vec3(2, 2, 1));
+            a_gui->parent_object()->set_background_color(scls::Color(0, 0, 0));
+            a_gui->parent_object()->set_position_in_pixel(0, 0);
+            a_gui->parent_object()->set_height_in_scale(scls::Fraction(1));
+            a_gui->parent_object()->set_width_in_scale(scls::Fraction(1));
+            display_page_2d("gui");
 
             // Create the playground
-            playground = gui->parent_object()->new_object<GUI_Object>("playground");
-            playground->set_height_in_pixel(window_width);
-            playground->set_width_in_scale(1);
-            playground->set_y_in_object_scale(Fraction(3, 5));
+            a_playground = a_gui->parent_object()->new_object<GUI_Object>("playground");
+            a_playground->set_height_in_pixel(window_width);
+            a_playground->set_width_in_scale(1);
+            a_playground->set_y_in_object_scale(Fraction(3, 5));
             std::shared_ptr<Image> image = playground_image();
-            playground->texture()->set_image(image);
-            playground->move_left_in_parent();
+            a_playground->texture()->set_image(image);
+            a_playground->move_left_in_parent();
+
+            // Create a piece of snake
+            a_loaded_snakes.push_back(std::make_unique<Snake_Total>(*this, "main"));
+
+            // Create the textures
+            // Bottom snake texture
+            a_bottom_snake_head_texture = std::make_shared<Image>(100, 100, Color(0, 0, 0, 0));
+            a_bottom_snake_head_texture.get()->fill_rect(10, 63, 25, 25, Color(255, 255, 255, 255));
+            a_bottom_snake_head_texture.get()->fill_rect(65, 63, 25, 25, Color(255, 255, 255, 255));
+            a_bottom_snake_head_texture.get()->fill_rect(15, 73, 15, 15, Color(0, 0, 0, 255));
+            a_bottom_snake_head_texture.get()->fill_rect(70, 73, 15, 15, Color(0, 0, 0, 255));
+            // Left snake texture
+            a_left_snake_head_texture = std::make_shared<Image>(100, 100, Color(0, 0, 0, 0));
+            a_left_snake_head_texture.get()->fill_rect(12 , 10, 25, 25, Color(255, 255, 255, 255));
+            a_left_snake_head_texture.get()->fill_rect(12 , 65, 25, 25, Color(255, 255, 255, 255));
+            a_left_snake_head_texture.get()->fill_rect(12 , 15, 15, 15, Color(0, 0, 0, 255));
+            a_left_snake_head_texture.get()->fill_rect(12 , 70, 15, 15, Color(0, 0, 0, 255));
+            // Right snake texture
+            a_right_snake_head_texture = std::make_shared<Image>(100, 100, Color(0, 0, 0, 0));
+            a_right_snake_head_texture.get()->fill_rect(63, 10, 25, 25, Color(255, 255, 255, 255));
+            a_right_snake_head_texture.get()->fill_rect(63, 65, 25, 25, Color(255, 255, 255, 255));
+            a_right_snake_head_texture.get()->fill_rect(73, 15, 15, 15, Color(0, 0, 0, 255));
+            a_right_snake_head_texture.get()->fill_rect(73, 70, 15, 15, Color(0, 0, 0, 255));
+            // Top snake texture
+            a_top_snake_head_texture = std::make_shared<Image>(100, 100, Color(0, 0, 0, 0));
+            a_top_snake_head_texture.get()->fill_rect(10, 12, 25, 25, Color(255, 255, 255, 255));
+            a_top_snake_head_texture.get()->fill_rect(65, 12, 25, 25, Color(255, 255, 255, 255));
+            a_top_snake_head_texture.get()->fill_rect(15, 12, 15, 15, Color(0, 0, 0, 255));
+            a_top_snake_head_texture.get()->fill_rect(70, 12, 15, 15, Color(0, 0, 0, 255));
+        }
+
+        // Calculate the positions of the GUI
+        void Snake::calculate_GUI_positions() {
+            // Calculate the datas about the cases
+            unsigned int current_pos = a_outer_line_width * 2;
+            a_cases_height = partition_number(window_width() - (a_outer_line_width * 3 - a_inner_line_width), a_height_in_cases);
+            a_cases_width = partition_number(window_width() - (a_outer_line_width * 3 - a_inner_line_width), a_width_in_cases);
+            a_cases_x.clear();
+            for(int i = 0;i<static_cast<int>(a_cases_width.size());i++) {
+                a_cases_x.push_back(current_pos);
+                current_pos += a_cases_width[i];
+            }
+            current_pos = a_outer_line_width * 2;
+            a_cases_y.clear();
+            for(int i = 0;i<static_cast<int>(a_cases_height.size());i++) {
+                a_cases_y.push_back(current_pos);
+                current_pos += a_cases_height[i];
+            }
+        }
+
+        // Deletes an object in the game
+        void Snake::delete_object(Snake_Object* object_to_delete) {
+            for(int i = 0;i<static_cast<int>(a_objects.size());i++) {
+                if(a_objects[i] == object_to_delete) {
+                    a_objects.erase(a_objects.begin() + i);
+                    a_playground->delete_child(object_to_delete);
+                    return;
+                }
+            }
+        }
+
+        // Move an object at a certain case
+        void Snake::move_object(Snake_Object* piece, unsigned int case_x, unsigned int case_y) {
+            if(case_y >= a_height_in_cases - 1) piece->set_height_in_pixel(a_cases_height[case_y]);
+            else piece->set_height_in_pixel(a_cases_height[case_y] - 1);
+            if(case_x >= a_width_in_cases - 1) piece->set_width_in_pixel(a_cases_width[case_x]);
+            else piece->set_width_in_pixel(a_cases_width[case_x] - 1);
+            piece->set_x_in_pixel(a_cases_x[case_x]);
+            piece->set_y_in_pixel(a_cases_y[case_y]);
+            piece->set_x_in_cases(case_x);
+            piece->set_y_in_cases(case_y);
+        }
+
+        // Returns the object at a position in the game
+        Snake_Object* Snake::object_at(unsigned short x, unsigned short y) {
+            for(int i = 0;i<static_cast<int>(a_objects.size());i++) {
+                if(a_objects[i]->x_in_cases() == x && a_objects[i]->y_in_cases() == y) {
+                    return a_objects[i];
+                }
+            }
+            return 0;
         }
 
         // Create the background image of the playground part
         std::shared_ptr<Image> Snake::playground_image() {
+            calculate_GUI_positions();
             std::shared_ptr<Image> to_return = std::make_shared<Image>(window_width(), window_width(), Color(160, 160, 160));
 
             // Draw the outer lines
-            unsigned char outer_line_width = 4;
             Image* image = to_return.get();
-            image->fill_rect(0, 0, outer_line_width, image->height() - outer_line_width, Color(60, 60, 60));
-            image->fill_rect(0, image->height() - outer_line_width, image->width(), outer_line_width, Color(60, 60, 60));
-            image->fill_rect(outer_line_width, 0, outer_line_width, image->height() - outer_line_width * 2, Color(102, 102, 102));
-            image->fill_rect(outer_line_width, image->height() - outer_line_width * 2, image->width() - outer_line_width, outer_line_width, Color(102, 102, 102));
-            image->fill_rect(outer_line_width * 2, 0, image->width() - outer_line_width * 2, outer_line_width, Color(200, 200, 200));
-            image->fill_rect(image->width() - outer_line_width, 0, outer_line_width, image->height() - outer_line_width * 2, Color(200, 200, 200));
+            image->fill_rect(0, 0, a_outer_line_width, image->height() - a_outer_line_width, Color(60, 60, 60));
+            image->fill_rect(0, image->height() - a_outer_line_width, image->width(), a_outer_line_width, Color(60, 60, 60));
+            image->fill_rect(a_outer_line_width, 0, a_outer_line_width, image->height() - a_outer_line_width * 2, Color(102, 102, 102));
+            image->fill_rect(a_outer_line_width, image->height() - a_outer_line_width * 2, image->width() - a_outer_line_width, a_outer_line_width, Color(102, 102, 102));
+            image->fill_rect(a_outer_line_width * 2, 0, image->width() - a_outer_line_width * 2, a_outer_line_width, Color(200, 200, 200));
+            image->fill_rect(image->width() - a_outer_line_width, 0, a_outer_line_width, image->height() - a_outer_line_width * 2, Color(200, 200, 200));
 
             // Draw the inner lines
-            unsigned int current_pos = outer_line_width * 2;
-            unsigned char inner_line_width = 1;
-            std::vector<long long> cases = partition_number(image->width() - (outer_line_width * 3 - inner_line_width), a_width_in_cases);
-            for(int i = 0;i<static_cast<int>(cases.size());i++) {
-                current_pos += cases[i];
-                if(i < static_cast<int>(cases.size()) - 1)image->draw_line(current_pos, outer_line_width - 1, current_pos, image->height() - outer_line_width * 2, scls::Color(102, 102, 102));
+            for(int i = 0;i<static_cast<int>(a_cases_width.size());i++) {
+                if(i < static_cast<int>(a_cases_width.size()) - 1) image->draw_line((a_cases_x[i] + a_cases_width[i]) - a_inner_line_width, a_outer_line_width - 1, (a_cases_x[i] + a_cases_width[i]) - a_inner_line_width, image->height() - a_outer_line_width * 2, scls::Color(102, 102, 102));
             }
-            current_pos = outer_line_width * 2;
-            cases = partition_number(image->height() - (outer_line_width * 3 - inner_line_width), a_height_in_cases);
-            for(int i = 0;i<static_cast<int>(cases.size());i++) {
-                current_pos += cases[i];
-                if(i < static_cast<int>(cases.size()) - 1) image->draw_line(outer_line_width - 1, current_pos, image->width() - outer_line_width * 2, current_pos, scls::Color(102, 102, 102));
+            for(int i = 0;i<static_cast<int>(a_cases_height.size());i++) {
+                if(i < static_cast<int>(a_cases_height.size()) - 1) { image->draw_line(a_outer_line_width - 1, image->height() - (a_cases_y[i] + a_cases_height[i]), (image->width() - a_outer_line_width) - 1, image->height() - (a_cases_y[i] + a_cases_height[i]), scls::Color(102, 102, 102)); }
             }
 
             return to_return;
+        }
+
+        // Update the Snake
+        void Snake::update() {
+            update_objects();
+            update_snakes();
+            update_snake_pieces();
+        }
+
+        // Update the objects
+        void Snake::update_objects() {
+            unsigned char object_number = 3;
+
+            for(int i = 0;i<object_number - static_cast<int>(a_objects.size());i++) {
+                unsigned short x_pos = 0;
+                unsigned short y_pos = 0;
+                do {
+                    x_pos = rand()%a_width_in_cases;
+                    y_pos = rand()%a_height_in_cases;
+                } while(object_at(x_pos, y_pos) != 0);
+
+                // Create the food object
+                Snake_Object* new_created_object = a_playground->new_object<Snake_Object>("food_" + std::to_string(a_objects_created));
+                new_created_object->set_background_color(Color(255, 0, 0));
+                new_created_object->set_type("food");
+                move_object(new_created_object, x_pos, y_pos);
+                a_objects_created++;
+                a_objects.push_back(new_created_object);
+            }
+        }
+
+        // Update the number of snake pieces
+        void Snake::update_snake_pieces() {
+            unsigned int total_pieces = 0;
+            for(int i = 0;i<static_cast<int>(a_loaded_snakes.size());i++) {
+                total_pieces += a_loaded_snakes[i]->pieces_number();
+            }
+
+            // Create the needed pieces
+            for(int i = 0;i<total_pieces - static_cast<int>(a_snake_pieces.size());i++) {
+                Snake_Piece* a_piece = a_playground->new_object<Snake_Piece>("piece_" + std::to_string(a_pieces_created));
+                move_object(a_piece, 0, 0);
+                a_pieces_created++;
+                a_snake_pieces.push_back(a_piece);
+            }
+
+            // Place the pieces
+            total_pieces = 0;
+            for(int i = 0;i<static_cast<int>(a_loaded_snakes.size());i++) {
+                Snake_Total* current_snake = a_loaded_snakes[i].get();
+                for(int i = 0;i<static_cast<int>(current_snake->pieces_number());i++) {
+                    if(i >= static_cast<int>(current_snake->pieces_number()) - 1) {
+                        if(current_snake->last_move() == 0) a_snake_pieces[total_pieces]->texture()->set_image(a_top_snake_head_texture);
+                        else if(current_snake->last_move() == 1) a_snake_pieces[total_pieces]->texture()->set_image(a_left_snake_head_texture);
+                        else if(current_snake->last_move() == 2) a_snake_pieces[total_pieces]->texture()->set_image(a_bottom_snake_head_texture);
+                        else if(current_snake->last_move() == 3) a_snake_pieces[total_pieces]->texture()->set_image(a_right_snake_head_texture);
+                        else a_snake_pieces[total_pieces]->texture()->set_image(a_right_snake_head_texture);
+                    }
+                    else {
+                        a_snake_pieces[total_pieces]->texture()->set_image(0);
+                    }
+                    move_object(a_snake_pieces[total_pieces], current_snake->pieces_x()[i], current_snake->pieces_y()[i]);
+                    total_pieces++;
+                }
+            }
+        }
+
+        // Update the loaded snakes
+        void Snake::update_snakes() {
+            unsigned int total_pieces = 0;
+            for(int i = 0;i<static_cast<int>(a_loaded_snakes.size());i++) {
+                Snake_Total* current_snake = a_loaded_snakes[i].get();
+                if(current_snake->last_move_time() > 1.0 / static_cast<double>(current_snake->speed())) {
+                    // Check the keyboard
+                    if(key_state("left arrow") == Key_State::Pressed) {
+                        current_snake->set_last_move(1);
+                    }
+                    if(key_state("right arrow") == Key_State::Pressed) {
+                        current_snake->set_last_move(3);
+                    }
+                    if(key_state("up arrow") == Key_State::Pressed) {
+                        current_snake->set_last_move(0);
+                    }
+                    if(key_state("down arrow") == Key_State::Pressed) {
+                        current_snake->set_last_move(2);
+                    }
+
+                    // Move the snake
+                    short new_x = 0;
+                    short new_y = 0;
+                    if(current_snake->last_move() == 0) {
+                        new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1];
+                        new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1] + 1;
+                    }
+                    else if(current_snake->last_move() == 1) {
+                        new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1] - 1;
+                        new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1];
+                    }
+                    else if(current_snake->last_move() == 2) {
+                        new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1];
+                        new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1] - 1;
+                    }
+                    else if(current_snake->last_move() == 3) {
+                        new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1] + 1;
+                        new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1];
+                    }
+
+                    // Reset the snake
+                    Snake_Object* current_object = object_at(new_x, new_y);
+                    if(current_snake->last_move() != -1) {
+                        if(new_x >= 0 && new_y >= 0) {
+                            current_snake->pieces_x().push_back(new_x);
+                            current_snake->pieces_y().push_back(new_y);
+                            if(current_object == 0 || current_object->type() != "food") {
+                                current_snake->pieces_x().erase(current_snake->pieces_x().begin());
+                                current_snake->pieces_y().erase(current_snake->pieces_y().begin());
+                            }
+                            else if(current_object->type() == "food") {
+                                delete_object(current_object);
+                            }
+                            current_snake->reset_last_move_time();
+                        }
+                    }
+                }
+                else {
+                    current_snake->set_last_move_time(current_snake->last_move_time() + delta_time());
+                }
+            }
         }
 
         // Use the Snake window

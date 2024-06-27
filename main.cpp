@@ -26,6 +26,7 @@
 #include "snake/scls_demo_snake.h"
 
 int main(int argc, char* argv[]) {
+    srand(time(0));
     scls::demo::use_snake(540, 960, argv[0]);
 
     return 0;
