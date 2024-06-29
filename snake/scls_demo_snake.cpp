@@ -74,6 +74,8 @@ namespace scls {
         Snake::Snake(int window_width, int window_height, std::string exec_path) : Window(window_width, window_height, exec_path) {
             set_background_color(Color(0, 0, 0));
 
+            glfwSetWindowTitle(window(), "Snake par Aster Système");
+
             // Create the page
             a_gui = new_page_2d<GUI_Page>("gui");
             a_gui->set_scale(glm::vec3(2, 2, 1));
@@ -92,8 +94,51 @@ namespace scls {
             a_playground->texture()->set_image(image);
             a_playground->move_left_in_parent();
 
-            // Create a piece of snake
-            a_loaded_snakes.push_back(std::make_unique<Snake_Total>(*this, "main"));
+            // Logo of Aster System
+            a_logo = a_gui->parent_object()->new_object<GUI_Object>("aster_system_logo");
+            a_logo->set_height_in_scale(Fraction(1, 6));
+            a_logo->set_width_in_scale(1);
+            a_logo->set_texture_alignment(Alignment_Texture::T_Fit);
+            image = aster_system_logo();
+            a_logo->texture()->set_image(image);
+            a_logo->move_bottom_in_parent(10);
+            a_logo->set_x_in_object_scale(Fraction(1, 2));
+
+            // Lose text
+            a_lose_text = a_gui->parent_object()->new_object<GUI_Text>("lose_text");
+            a_lose_text->set_background_color(Color(0, 0, 0, 0));
+            a_lose_text->set_font_color(Color(255, 255, 255));
+            a_lose_text->set_font_size(50);
+            a_lose_text->set_height_in_pixel(50);
+            a_lose_text->set_text("Vous avez perdu");
+            a_lose_text->set_width_in_scale(1);
+            a_lose_text->set_texture_alignment(Alignment_Texture::T_Fit);
+            a_lose_text->move_left_in_parent();
+            a_lose_text->move_bottom_of_object_in_parent(a_playground, 10);
+
+            // Restart button
+            a_restart_button = a_gui->parent_object()->new_object<GUI_Text>("restart_button");
+            a_restart_button->set_background_color(Color(160, 160, 160, 160));
+            a_restart_button->set_font_color(Color(0, 0, 0));
+            a_restart_button->set_font_size(50);
+            a_restart_button->set_height_in_pixel(50);
+            a_restart_button->set_overflighted_cursor(GLFW_HAND_CURSOR);
+            a_restart_button->set_text("Recommencer");
+            a_restart_button->set_width_in_scale(1);
+            a_restart_button->set_texture_alignment(Alignment_Texture::T_Fit);
+            a_restart_button->move_left_in_parent();
+            a_restart_button->move_bottom_of_object_in_parent(a_lose_text, 10);
+
+            // Load the score
+            a_score = a_gui->parent_object()->new_object<GUI_Text>("score");
+            a_score->set_background_color(Color(0, 0, 0, 0));
+            a_score->set_font_color(Color(255, 255, 255));
+            a_score->set_font_size(50);
+            a_score->set_height_in_pixel(50);
+            a_score->set_width_in_scale(1);
+            a_score->set_texture_alignment(Alignment_Texture::T_Fit);
+            a_score->move_left_in_parent();
+            a_score->move_top_in_parent(10);
 
             // Create the textures
             // Bottom snake texture
@@ -120,6 +165,34 @@ namespace scls {
             a_top_snake_head_texture.get()->fill_rect(65, 12, 25, 25, Color(255, 255, 255, 255));
             a_top_snake_head_texture.get()->fill_rect(15, 12, 15, 15, Color(0, 0, 0, 255));
             a_top_snake_head_texture.get()->fill_rect(70, 12, 15, 15, Color(0, 0, 0, 255));
+            // Dead head texture
+            // Texture of the bottom of the head of the snake
+            a_bottom_snake_dead_head_texture = std::make_shared<Image>(100, 100, Color(0, 0, 0, 0));
+            a_bottom_snake_dead_head_texture.get()->draw_line(10, 65, 35, 90, Color(0, 0, 0, 255), 7);
+            a_bottom_snake_dead_head_texture.get()->draw_line(35, 65, 10, 90, Color(0, 0, 0, 255), 7);
+            a_bottom_snake_dead_head_texture.get()->draw_line(90, 65, 65, 90, Color(0, 0, 0, 255), 7);
+            a_bottom_snake_dead_head_texture.get()->draw_line(65, 65, 90, 90, Color(0, 0, 0, 255), 7);
+            // Texture of the left of the head of the snake
+            a_left_snake_dead_head_texture = std::make_shared<Image>(100, 100, Color(0, 0, 0, 0));
+            a_left_snake_dead_head_texture.get()->draw_line(10, 10, 35, 35, Color(0, 0, 0, 255), 7);
+            a_left_snake_dead_head_texture.get()->draw_line(10, 35, 35, 10, Color(0, 0, 0, 255), 7);
+            a_left_snake_dead_head_texture.get()->draw_line(10, 90, 35, 65, Color(0, 0, 0, 255), 7);
+            a_left_snake_dead_head_texture.get()->draw_line(10, 65, 35, 90, Color(0, 0, 0, 255), 7);
+            // Texture of the left of the head of the snake
+            a_right_snake_dead_head_texture = std::make_shared<Image>(100, 100, Color(0, 0, 0, 0));
+            a_right_snake_dead_head_texture.get()->draw_line(65, 10, 90, 35, Color(0, 0, 0, 255), 7);
+            a_right_snake_dead_head_texture.get()->draw_line(65, 35, 90, 10, Color(0, 0, 0, 255), 7);
+            a_right_snake_dead_head_texture.get()->draw_line(65, 90, 90, 65, Color(0, 0, 0, 255), 7);
+            a_right_snake_dead_head_texture.get()->draw_line(65, 65, 90, 90, Color(0, 0, 0, 255), 7);
+            // Texture of the top of the head of the snake
+            a_top_snake_dead_head_texture = std::make_shared<Image>(100, 100, Color(0, 0, 0, 0));
+            a_top_snake_dead_head_texture.get()->draw_line(10, 10, 35, 35, Color(0, 0, 0, 255), 7);
+            a_top_snake_dead_head_texture.get()->draw_line(35, 10, 10, 35, Color(0, 0, 0, 255), 7);
+            a_top_snake_dead_head_texture.get()->draw_line(90, 10, 65, 35, Color(0, 0, 0, 255), 7);
+            a_top_snake_dead_head_texture.get()->draw_line(65, 10, 90, 35, Color(0, 0, 0, 255), 7);
+
+            // Start the game
+            reset_game();
         }
 
         // Calculate the positions of the GUI
@@ -152,6 +225,14 @@ namespace scls {
             }
         }
 
+        // Kill a snake
+        void Snake::kill_snake(Snake_Total &snake) {
+            a_lose_text->set_visible(true);
+            a_restart_button->set_visible(true);
+            snake.kill();
+            update_score(snake);
+        }
+
         // Move an object at a certain case
         void Snake::move_object(Snake_Object* piece, unsigned int case_x, unsigned int case_y) {
             if(case_y >= a_height_in_cases - 1) piece->set_height_in_pixel(a_cases_height[case_y]);
@@ -169,6 +250,11 @@ namespace scls {
             for(int i = 0;i<static_cast<int>(a_objects.size());i++) {
                 if(a_objects[i]->x_in_cases() == x && a_objects[i]->y_in_cases() == y) {
                     return a_objects[i];
+                }
+            }
+            for(int i = 0;i<static_cast<int>(a_snake_pieces.size());i++) {
+                if(a_snake_pieces[i]->x_in_cases() == x && a_snake_pieces[i]->y_in_cases() == y) {
+                    return a_snake_pieces[i];
                 }
             }
             return 0;
@@ -194,9 +280,20 @@ namespace scls {
             }
             for(int i = 0;i<static_cast<int>(a_cases_height.size());i++) {
                 if(i < static_cast<int>(a_cases_height.size()) - 1) { image->draw_line(a_outer_line_width - 1, image->height() - (a_cases_y[i] + a_cases_height[i]), (image->width() - a_outer_line_width) - 1, image->height() - (a_cases_y[i] + a_cases_height[i]), scls::Color(102, 102, 102)); }
-            }
+            } //*/
 
             return to_return;
+        }
+
+        // Reset the game
+        void Snake::reset_game() {
+            a_loaded_snakes.clear();
+            a_lose_text->set_visible(false);
+            a_restart_button->set_visible(false);
+
+            // Create a new snake
+            a_loaded_snakes.push_back(std::make_unique<Snake_Total>(*this, "main"));
+            update_score(*a_loaded_snakes[a_loaded_snakes.size() - 1].get());
         }
 
         // Update the Snake
@@ -204,6 +301,10 @@ namespace scls {
             update_objects();
             update_snakes();
             update_snake_pieces();
+
+            if(a_restart_button->is_clicked_during_this_frame(GLFW_MOUSE_BUTTON_LEFT)) {
+                reset_game();
+            }
         }
 
         // Update the objects
@@ -228,6 +329,13 @@ namespace scls {
             }
         }
 
+        // Update the score according to a snake
+        void Snake::update_score(Snake_Total &snake) {
+            if(a_score != 0) {
+                a_score->set_text("Score : " + std::to_string(snake.pieces_number() - 1) + " / " + std::to_string(a_width_in_cases * a_height_in_cases - 1));
+            }
+        }
+
         // Update the number of snake pieces
         void Snake::update_snake_pieces() {
             unsigned int total_pieces = 0;
@@ -236,11 +344,17 @@ namespace scls {
             }
 
             // Create the needed pieces
-            for(int i = 0;i<total_pieces - static_cast<int>(a_snake_pieces.size());i++) {
+            for(int i = 0;i<static_cast<int>(total_pieces) - static_cast<int>(a_snake_pieces.size());i++) {
                 Snake_Piece* a_piece = a_playground->new_object<Snake_Piece>("piece_" + std::to_string(a_pieces_created));
                 move_object(a_piece, 0, 0);
                 a_pieces_created++;
                 a_snake_pieces.push_back(a_piece);
+            }
+
+            // Remove the needed pieces
+            while(static_cast<int>(a_snake_pieces.size()) > total_pieces) {
+                a_playground->delete_child(a_snake_pieces[a_snake_pieces.size() - 1]);
+                a_snake_pieces.pop_back();
             }
 
             // Place the pieces
@@ -249,11 +363,19 @@ namespace scls {
                 Snake_Total* current_snake = a_loaded_snakes[i].get();
                 for(int i = 0;i<static_cast<int>(current_snake->pieces_number());i++) {
                     if(i >= static_cast<int>(current_snake->pieces_number()) - 1) {
-                        if(current_snake->last_move() == 0) a_snake_pieces[total_pieces]->texture()->set_image(a_top_snake_head_texture);
-                        else if(current_snake->last_move() == 1) a_snake_pieces[total_pieces]->texture()->set_image(a_left_snake_head_texture);
-                        else if(current_snake->last_move() == 2) a_snake_pieces[total_pieces]->texture()->set_image(a_bottom_snake_head_texture);
-                        else if(current_snake->last_move() == 3) a_snake_pieces[total_pieces]->texture()->set_image(a_right_snake_head_texture);
-                        else a_snake_pieces[total_pieces]->texture()->set_image(a_right_snake_head_texture);
+                        if(current_snake->is_dead()) {
+                            if(current_snake->last_move() == 0) a_current_snake_head_texture = a_top_snake_dead_head_texture;
+                            else if(current_snake->last_move() == 1) a_current_snake_head_texture = a_left_snake_dead_head_texture;
+                            else if(current_snake->last_move() == 2) a_current_snake_head_texture = a_bottom_snake_dead_head_texture;
+                            else a_current_snake_head_texture = a_right_snake_dead_head_texture;
+                        }
+                        else {
+                            if(current_snake->last_move() == 0) a_current_snake_head_texture = a_top_snake_head_texture;
+                            else if(current_snake->last_move() == 1) a_current_snake_head_texture = a_left_snake_head_texture;
+                            else if(current_snake->last_move() == 2) a_current_snake_head_texture = a_bottom_snake_head_texture;
+                            else a_current_snake_head_texture = a_right_snake_head_texture;
+                        }
+                        a_snake_pieces[total_pieces]->texture()->set_image(a_current_snake_head_texture);
                     }
                     else {
                         a_snake_pieces[total_pieces]->texture()->set_image(0);
@@ -270,54 +392,67 @@ namespace scls {
             for(int i = 0;i<static_cast<int>(a_loaded_snakes.size());i++) {
                 Snake_Total* current_snake = a_loaded_snakes[i].get();
                 if(current_snake->last_move_time() > 1.0 / static_cast<double>(current_snake->speed())) {
-                    // Check the keyboard
-                    if(key_state("left arrow") == Key_State::Pressed) {
-                        current_snake->set_last_move(1);
-                    }
-                    if(key_state("right arrow") == Key_State::Pressed) {
-                        current_snake->set_last_move(3);
-                    }
-                    if(key_state("up arrow") == Key_State::Pressed) {
-                        current_snake->set_last_move(0);
-                    }
-                    if(key_state("down arrow") == Key_State::Pressed) {
-                        current_snake->set_last_move(2);
-                    }
+                    if(!current_snake->is_dead()) {
+                        // Check the keyboard
+                        if(key_state("left arrow") == Key_State::Pressed) {
+                            current_snake->set_last_move(1);
+                        }
+                        if(key_state("right arrow") == Key_State::Pressed) {
+                            current_snake->set_last_move(3);
+                        }
+                        if(key_state("up arrow") == Key_State::Pressed) {
+                            current_snake->set_last_move(0);
+                        }
+                        if(key_state("down arrow") == Key_State::Pressed) {
+                            current_snake->set_last_move(2);
+                        }
 
-                    // Move the snake
-                    short new_x = 0;
-                    short new_y = 0;
-                    if(current_snake->last_move() == 0) {
-                        new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1];
-                        new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1] + 1;
-                    }
-                    else if(current_snake->last_move() == 1) {
-                        new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1] - 1;
-                        new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1];
-                    }
-                    else if(current_snake->last_move() == 2) {
-                        new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1];
-                        new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1] - 1;
-                    }
-                    else if(current_snake->last_move() == 3) {
-                        new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1] + 1;
-                        new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1];
-                    }
+                        // Move the snake
+                        short new_x = 0;
+                        short new_y = 0;
+                        if(current_snake->last_move() == 0) {
+                            new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1];
+                            new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1] + 1;
+                        }
+                        else if(current_snake->last_move() == 1) {
+                            new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1] - 1;
+                            new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1];
+                        }
+                        else if(current_snake->last_move() == 2) {
+                            new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1];
+                            new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1] - 1;
+                        }
+                        else if(current_snake->last_move() == 3) {
+                            new_x = current_snake->pieces_x()[current_snake->pieces_x().size() - 1] + 1;
+                            new_y = current_snake->pieces_y()[current_snake->pieces_y().size() - 1];
+                        }
 
-                    // Reset the snake
-                    Snake_Object* current_object = object_at(new_x, new_y);
-                    if(current_snake->last_move() != -1) {
-                        if(new_x >= 0 && new_y >= 0) {
-                            current_snake->pieces_x().push_back(new_x);
-                            current_snake->pieces_y().push_back(new_y);
-                            if(current_object == 0 || current_object->type() != "food") {
-                                current_snake->pieces_x().erase(current_snake->pieces_x().begin());
-                                current_snake->pieces_y().erase(current_snake->pieces_y().begin());
+                        // Reset the snake
+                        if(current_snake->last_move() != -1) {
+                            if(new_x >= 0 && new_y >= 0 && new_x < a_width_in_cases && new_y < a_height_in_cases) {
+                                Snake_Object* current_object = object_at(new_x, new_y);
+                                bool finaly_move_snake = true;
+                                if(current_object == 0) {
+                                    current_snake->pieces_x().erase(current_snake->pieces_x().begin());
+                                    current_snake->pieces_y().erase(current_snake->pieces_y().begin());
+                                }
+                                else if(current_object->type() == "snake") {
+                                    kill_snake(*current_snake);
+                                    finaly_move_snake = false;
+                                }
+                                if(finaly_move_snake) {
+                                    current_snake->pieces_x().push_back(new_x);
+                                    current_snake->pieces_y().push_back(new_y);
+                                }
+                                if(current_object != 0 && current_object->type() == "food") {
+                                    delete_object(current_object);
+                                    update_score(*current_snake);
+                                }
+                                current_snake->reset_last_move_time();
                             }
-                            else if(current_object->type() == "food") {
-                                delete_object(current_object);
+                            else {
+                                kill_snake(*current_snake);
                             }
-                            current_snake->reset_last_move_time();
                         }
                     }
                 }

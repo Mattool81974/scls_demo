@@ -57,7 +57,11 @@ namespace scls {
             //
             //*********
 
+            // Kill the snake
+            inline void kill() {a_dead = true;};
+
             // Getters and setters
+            inline bool is_dead() const {return a_dead;};
             inline char last_move() const {return a_last_move;};
             inline double last_move_time() const {return a_last_move_time;};
             inline void reset_last_move_time() {a_last_move_time = 0;};
@@ -90,6 +94,8 @@ namespace scls {
             //
             //*********
 
+            // If the sneak is dead or not
+            bool a_dead = false;
             // Last direction of the move of the snake
             char a_last_move = -1;
             // Time of the last move
@@ -201,12 +207,18 @@ namespace scls {
 
             // Deletes an object in the game
             void delete_object(Snake_Object* object_to_delete);
+            // Kill a snake
+            void kill_snake(Snake_Total &snake);
             // Returns the object at a position in the game
             Snake_Object* object_at(unsigned short x, unsigned short y);
+            // Reset the game
+            void reset_game();
             // Update the Snake
             virtual void update();
             // Update the objects
             virtual void update_objects();
+            // Update the score according to a snake
+            void update_score(Snake_Total &snake);
             // Update the number of snake pieces
             void update_snake_pieces();
             // Update the loaded snakes
@@ -221,7 +233,7 @@ namespace scls {
             // Calculate the positions of the GUI
             void calculate_GUI_positions();
             // Move a piece of snake at its position
-            void move_snake(Snake_Total* snake);
+            void move_snake(Snake_Total);
             // Move a piece of snake at a certains case
             void move_object(Snake_Object* object, unsigned int case_x, unsigned int case_y);
             // Create the background image of the playground part
@@ -261,6 +273,10 @@ namespace scls {
             GUI_Page* a_gui = 0;
             // Size of the inner line
             unsigned char a_inner_line_width = 1;
+            // Aster system logo
+            GUI_Object* a_logo = 0;
+            // Death text for the snake
+            GUI_Text* a_lose_text = 0;
             // Each other objects in the grid
             std::vector<Snake_Object*> a_objects = std::vector<Snake_Object*>();
             // Number of objects created
@@ -271,17 +287,31 @@ namespace scls {
             unsigned int a_pieces_created = 0;
             // Playground of the game
             GUI_Object* a_playground = 0;
+            // Reset button for the snake
+            GUI_Text* a_restart_button = 0;
+            // Score of the snake
+            GUI_Text* a_score = 0;
             // Each pieces of snakes
             std::vector<Snake_Piece*> a_snake_pieces = std::vector<Snake_Piece*>();
 
-            // Texture of the top of the head of the snake
+            // Texture of the bottom of the head of the snake
             std::shared_ptr<Image> a_bottom_snake_head_texture = std::shared_ptr<Image>();
-            // Texture of the top of the head of the snake
+            // Texture of the bottom of the head of the snake dead
+            std::shared_ptr<Image> a_bottom_snake_dead_head_texture = std::shared_ptr<Image>();
+            // Current texture of the head of the scane
+            std::shared_ptr<Image> a_current_snake_head_texture = std::shared_ptr<Image>();
+            // Texture of the left of the head of the snake
             std::shared_ptr<Image> a_left_snake_head_texture = std::shared_ptr<Image>();
-            // Texture of the top of the head of the snake
+            // Texture of the left of the head of the snake dead
+            std::shared_ptr<Image> a_left_snake_dead_head_texture = std::shared_ptr<Image>();
+            // Texture of the right of the head of the snake
             std::shared_ptr<Image> a_right_snake_head_texture = std::shared_ptr<Image>();
+            // Texture of the right of the head of the snake dead
+            std::shared_ptr<Image> a_right_snake_dead_head_texture = std::shared_ptr<Image>();
             // Texture of the top of the head of the snake
             std::shared_ptr<Image> a_top_snake_head_texture = std::shared_ptr<Image>();
+            // Texture of the top of the head of the snake dead
+            std::shared_ptr<Image> a_top_snake_dead_head_texture = std::shared_ptr<Image>();
         };
 
         // Use the Snake window
