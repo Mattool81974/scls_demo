@@ -200,7 +200,9 @@ namespace scls {
             // Calculate the datas about the cases
             unsigned int current_pos = a_outer_line_width * 2;
             a_cases_height = partition_number(window_width() - (a_outer_line_width * 3 - a_inner_line_width), a_height_in_cases);
+            a_cases_height[a_cases_height.size() - 1];
             a_cases_width = partition_number(window_width() - (a_outer_line_width * 3 - a_inner_line_width), a_width_in_cases);
+            a_cases_width[a_cases_width.size() - 1];
             a_cases_x.clear();
             for(int i = 0;i<static_cast<int>(a_cases_width.size());i++) {
                 a_cases_x.push_back(current_pos);
@@ -235,10 +237,8 @@ namespace scls {
 
         // Move an object at a certain case
         void Snake::move_object(Snake_Object* piece, unsigned int case_x, unsigned int case_y) {
-            if(case_y >= a_height_in_cases - 1) piece->set_height_in_pixel(a_cases_height[case_y]);
-            else piece->set_height_in_pixel(a_cases_height[case_y] - 1);
-            if(case_x >= a_width_in_cases - 1) piece->set_width_in_pixel(a_cases_width[case_x]);
-            else piece->set_width_in_pixel(a_cases_width[case_x] - 1);
+            piece->set_height_in_pixel(a_cases_height[case_y] - 1);
+            piece->set_width_in_pixel(a_cases_width[case_x] - 1);
             piece->set_x_in_pixel(a_cases_x[case_x]);
             piece->set_y_in_pixel(a_cases_y[case_y]);
             piece->set_x_in_cases(case_x);
@@ -393,6 +393,32 @@ namespace scls {
                 Snake_Total* current_snake = a_loaded_snakes[i].get();
                 if(current_snake->last_move_time() > 1.0 / static_cast<double>(current_snake->speed())) {
                     if(!current_snake->is_dead()) {
+                        // Active the cheat
+                        if(key_state("p") == Key_State::Pressed) {
+                            current_snake->set_use_cheat(true);
+                        }
+                        // If the snake cheat
+                        if(current_snake->use_cheat()) {
+                            if(current_snake->y() == 0) {
+                                if(current_snake->x() == 0) current_snake->set_last_move(0);
+                                else if(current_snake->x() == a_width_in_cases - 1) current_snake->set_last_move(1);
+                                else if(current_snake->x() == 0) current_snake->set_last_move(1);
+                            }
+                            else if(current_snake->y() == 1) {
+                                if(current_snake->x() == a_width_in_cases - 1) current_snake->set_last_move(2);
+                                else if(current_snake->x() % 2 == 0) current_snake->set_last_move(0);
+                                else current_snake->set_last_move(3);
+                            }
+                            else if(current_snake->y() >= a_height_in_cases - 1) {
+                                if(current_snake->x() % 2 == 0) current_snake->set_last_move(3);
+                                else current_snake->set_last_move(2);
+                            }
+                            else {
+                                if(current_snake->x() % 2 == 0) current_snake->set_last_move(0);
+                                else current_snake->set_last_move(2);
+                            }
+                        }
+
                         // Check the keyboard
                         if(key_state("left arrow") == Key_State::Pressed) {
                             current_snake->set_last_move(1);

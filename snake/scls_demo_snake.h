@@ -67,11 +67,13 @@ namespace scls {
             inline void reset_last_move_time() {a_last_move_time = 0;};
             inline void set_last_move(char new_last_move) {a_last_move = new_last_move;};
             inline void set_last_move_time(double new_last_move_time) {a_last_move_time = new_last_move_time;};
+            inline void set_use_cheat(bool new_use_cheat) {a_use_cheat = new_use_cheat;};
             inline void set_x(unsigned short new_x) {a_x = new_x;};
             inline void set_y(unsigned short new_y) {a_y = new_y;};
             inline unsigned short speed() const {return a_speed;};
-            inline unsigned short x() const {return a_x;};
-            inline unsigned short y() const {return a_y;};
+            inline bool use_cheat() const {return a_use_cheat;};
+            inline unsigned short x() const {return a_pieces_x.at(a_pieces_x.size() - 1);};
+            inline unsigned short y() const {return a_pieces_y.at(a_pieces_y.size() - 1);};
 
             //*********
             //
@@ -101,7 +103,9 @@ namespace scls {
             // Time of the last move
             double a_last_move_time = 0;
             // Speed of the snake, in case per second
-            unsigned short a_speed = 10;
+            unsigned short a_speed = 50;
+            // If the snake use a cheat or not
+            bool a_use_cheat = false;
             // X position of the snake
             unsigned short a_x = 0;
             // Y position of the snake
@@ -251,9 +255,9 @@ namespace scls {
             std::vector<std::unique_ptr<Snake_Total>> a_loaded_snakes = std::vector<std::unique_ptr<Snake_Total>>();
 
             // Height of the playground in scale
-            unsigned short a_height_in_cases = 15;
+            unsigned short a_height_in_cases = 12;
             // Width of the playground in scale
-            unsigned short a_width_in_cases = 15;
+            unsigned short a_width_in_cases = 12;
 
             //*********
             //
