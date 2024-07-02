@@ -270,7 +270,7 @@ namespace scls {
             // Y of each case
             std::vector<long long> a_cases_y = std::vector<long long>();
             // Page of the game
-            GUI_Page* a_gui = 0;
+            std::shared_ptr<GUI_Page> a_gui;
             // Size of the inner line
             unsigned char a_inner_line_width = 1;
             // Aster system logo

@@ -77,16 +77,16 @@ namespace scls {
             glfwSetWindowTitle(window(), "Snake par Aster Système");
 
             // Create the page
-            a_gui = new_page_2d<GUI_Page>("gui");
-            a_gui->set_scale(glm::vec3(2, 2, 1));
-            a_gui->parent_object()->set_background_color(scls::Color(0, 0, 0));
-            a_gui->parent_object()->set_position_in_pixel(0, 0);
-            a_gui->parent_object()->set_height_in_scale(scls::Fraction(1));
-            a_gui->parent_object()->set_width_in_scale(scls::Fraction(1));
+            a_gui = *new_page_2d<GUI_Page>("gui");
+            a_gui.get()->set_scale(glm::vec3(2, 2, 1));
+            a_gui.get()->parent_object()->set_background_color(scls::Color(0, 0, 0));
+            a_gui.get()->parent_object()->set_position_in_pixel(0, 0);
+            a_gui.get()->parent_object()->set_height_in_scale(scls::Fraction(1));
+            a_gui.get()->parent_object()->set_width_in_scale(scls::Fraction(1));
             display_page_2d("gui");
 
             // Create the playground
-            a_playground = a_gui->parent_object()->new_object<GUI_Object>("playground");
+            a_playground = a_gui.get()->parent_object()->new_object<GUI_Object>("playground");
             a_playground->set_height_in_pixel(window_width);
             a_playground->set_width_in_scale(1);
             a_playground->set_y_in_object_scale(Fraction(3, 5));
@@ -95,13 +95,13 @@ namespace scls {
             a_playground->move_left_in_parent();
 
             // Logo of Aster System
-            a_logo = a_gui->parent_object()->new_object<GUI_Object>("aster_system_logo");
-            a_logo->set_height_in_scale(Fraction(1, 6));
+            a_logo = a_gui.get()->parent_object()->new_object<GUI_Object>("aster_system_logo");
+            a_logo->set_height_in_scale(Fraction(1, 8));
             a_logo->set_width_in_scale(1);
             a_logo->set_texture_alignment(Alignment_Texture::T_Fit);
             image = aster_system_logo();
             a_logo->texture()->set_image(image);
-            a_logo->move_bottom_in_parent(10);
+            a_logo->move_bottom_in_parent(30);
             a_logo->set_x_in_object_scale(Fraction(1, 2));
 
             // Lose text
@@ -117,7 +117,7 @@ namespace scls {
             a_lose_text->move_bottom_of_object_in_parent(a_playground, 10);
 
             // Restart button
-            a_restart_button = a_gui->parent_object()->new_object<GUI_Text>("restart_button");
+            a_restart_button = a_gui.get()->parent_object()->new_object<GUI_Text>("restart_button");
             a_restart_button->set_background_color(Color(160, 160, 160, 160));
             a_restart_button->set_font_color(Color(0, 0, 0));
             a_restart_button->set_font_size(50);
@@ -130,7 +130,7 @@ namespace scls {
             a_restart_button->move_bottom_of_object_in_parent(a_lose_text, 10);
 
             // Load the score
-            a_score = a_gui->parent_object()->new_object<GUI_Text>("score");
+            a_score = a_gui.get()->parent_object()->new_object<GUI_Text>("score");
             a_score->set_background_color(Color(0, 0, 0, 0));
             a_score->set_font_color(Color(255, 255, 255));
             a_score->set_font_size(50);
@@ -227,8 +227,8 @@ namespace scls {
 
         // Kill a snake
         void Snake::kill_snake(Snake_Total &snake) {
-            a_lose_text->set_visible(true);
-            a_restart_button->set_visible(true);
+            if(a_lose_text != 0) a_lose_text->set_visible(true);
+            if(a_restart_button != 0) a_restart_button->set_visible(true);
             snake.kill();
             update_score(snake);
         }
@@ -288,8 +288,8 @@ namespace scls {
         // Reset the game
         void Snake::reset_game() {
             a_loaded_snakes.clear();
-            a_lose_text->set_visible(false);
-            a_restart_button->set_visible(false);
+            if(a_lose_text != 0) a_lose_text->set_visible(false);
+            if(a_restart_button != 0) a_restart_button->set_visible(false);
 
             // Create a new snake
             a_loaded_snakes.push_back(std::make_unique<Snake_Total>(*this, "main"));
@@ -302,7 +302,7 @@ namespace scls {
             update_snakes();
             update_snake_pieces();
 
-            if(a_restart_button->is_clicked_during_this_frame(GLFW_MOUSE_BUTTON_LEFT)) {
+            if(a_restart_button != 0 && a_restart_button->is_clicked_during_this_frame(GLFW_MOUSE_BUTTON_LEFT)) {
                 reset_game();
             }
         }
