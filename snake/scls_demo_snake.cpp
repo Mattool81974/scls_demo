@@ -49,7 +49,7 @@ namespace scls {
         //*********
 
         // Snake_Object constructor
-        Snake_Object::Snake_Object(Window& window, std::string name, GUI_Object* parent) : GUI_Object(window, name, parent) { }
+        Snake_Object::Snake_Object(_Window_Advanced_Struct& window, std::string name, GUI_Object* parent) : GUI_Object(window, name, parent) { }
 
         //*********
         //
@@ -58,7 +58,7 @@ namespace scls {
         //*********
 
         // Snake_Piece constructor
-        Snake_Piece::Snake_Piece(Window& window, std::string name, GUI_Object* parent) : Snake_Object(window, name, parent) {
+        Snake_Piece::Snake_Piece(_Window_Advanced_Struct& window, std::string name, GUI_Object* parent) : Snake_Object(window, name, parent) {
             set_background_color(Color(51, 255, 51));
             set_texture_alignment(Alignment_Texture::T_Fit);
             set_type("snake");
@@ -86,7 +86,7 @@ namespace scls {
             display_page_2d("gui");
 
             // Create the playground
-            a_playground = a_gui.get()->parent_object()->new_object<GUI_Object>("playground");
+            a_playground = *a_gui.get()->parent_object()->new_object<GUI_Object>("playground");
             a_playground->set_height_in_pixel(window_width);
             a_playground->set_width_in_scale(1);
             a_playground->set_y_in_object_scale(Fraction(3, 5));
@@ -95,7 +95,7 @@ namespace scls {
             a_playground->move_left_in_parent();
 
             // Logo of Aster System
-            a_logo = a_gui.get()->parent_object()->new_object<GUI_Object>("aster_system_logo");
+            a_logo = *a_gui.get()->parent_object()->new_object<GUI_Object>("aster_system_logo");
             a_logo->set_height_in_scale(Fraction(1, 8));
             a_logo->set_width_in_scale(1);
             a_logo->set_texture_alignment(Alignment_Texture::T_Fit);
@@ -105,7 +105,7 @@ namespace scls {
             a_logo->set_x_in_object_scale(Fraction(1, 2));
 
             // Lose text
-            a_lose_text = a_gui->parent_object()->new_object<GUI_Text>("lose_text");
+            a_lose_text = *a_gui->parent_object()->new_object<GUI_Text>("lose_text");
             a_lose_text->set_background_color(Color(0, 0, 0, 0));
             a_lose_text->set_font_color(Color(255, 255, 255));
             a_lose_text->set_font_size(50);
@@ -117,7 +117,7 @@ namespace scls {
             a_lose_text->move_bottom_of_object_in_parent(a_playground, 10);
 
             // Restart button
-            a_restart_button = a_gui.get()->parent_object()->new_object<GUI_Text>("restart_button");
+            a_restart_button = *a_gui.get()->parent_object()->new_object<GUI_Text>("restart_button");
             a_restart_button->set_background_color(Color(160, 160, 160, 160));
             a_restart_button->set_font_color(Color(0, 0, 0));
             a_restart_button->set_font_size(50);
@@ -130,7 +130,7 @@ namespace scls {
             a_restart_button->move_bottom_of_object_in_parent(a_lose_text, 10);
 
             // Load the score
-            a_score = a_gui.get()->parent_object()->new_object<GUI_Text>("score");
+            a_score = *a_gui.get()->parent_object()->new_object<GUI_Text>("score");
             a_score->set_background_color(Color(0, 0, 0, 0));
             a_score->set_font_color(Color(255, 255, 255));
             a_score->set_font_size(50);
@@ -219,7 +219,7 @@ namespace scls {
         // Deletes an object in the game
         void Snake::delete_object(Snake_Object* object_to_delete) {
             for(int i = 0;i<static_cast<int>(a_objects.size());i++) {
-                if(a_objects[i] == object_to_delete) {
+                if(a_objects[i].get() == object_to_delete) {
                     a_objects.erase(a_objects.begin() + i);
                     a_playground->delete_child(object_to_delete);
                     return;
@@ -249,12 +249,12 @@ namespace scls {
         Snake_Object* Snake::object_at(unsigned short x, unsigned short y) {
             for(int i = 0;i<static_cast<int>(a_objects.size());i++) {
                 if(a_objects[i]->x_in_cases() == x && a_objects[i]->y_in_cases() == y) {
-                    return a_objects[i];
+                    return a_objects[i].get();
                 }
             }
             for(int i = 0;i<static_cast<int>(a_snake_pieces.size());i++) {
                 if(a_snake_pieces[i]->x_in_cases() == x && a_snake_pieces[i]->y_in_cases() == y) {
-                    return a_snake_pieces[i];
+                    return a_snake_pieces[i].get();
                 }
             }
             return 0;
@@ -320,10 +320,10 @@ namespace scls {
                 } while(object_at(x_pos, y_pos) != 0);
 
                 // Create the food object
-                Snake_Object* new_created_object = a_playground->new_object<Snake_Object>("food_" + std::to_string(a_objects_created));
+                std::shared_ptr<Snake_Object> new_created_object = *a_playground->new_object<Snake_Object>("food_" + std::to_string(a_objects_created));
                 new_created_object->set_background_color(Color(255, 0, 0));
                 new_created_object->set_type("food");
-                move_object(new_created_object, x_pos, y_pos);
+                move_object(new_created_object.get(), x_pos, y_pos);
                 a_objects_created++;
                 a_objects.push_back(new_created_object);
             }
@@ -345,15 +345,15 @@ namespace scls {
 
             // Create the needed pieces
             for(int i = 0;i<static_cast<int>(total_pieces) - static_cast<int>(a_snake_pieces.size());i++) {
-                Snake_Piece* a_piece = a_playground->new_object<Snake_Piece>("piece_" + std::to_string(a_pieces_created));
-                move_object(a_piece, 0, 0);
+                std::shared_ptr<Snake_Piece> a_piece = *a_playground->new_object<Snake_Piece>("piece_" + std::to_string(a_pieces_created));
+                move_object(a_piece.get(), 0, 0);
                 a_pieces_created++;
                 a_snake_pieces.push_back(a_piece);
             }
 
             // Remove the needed pieces
             while(static_cast<int>(a_snake_pieces.size()) > total_pieces) {
-                a_playground->delete_child(a_snake_pieces[a_snake_pieces.size() - 1]);
+                a_playground->delete_child(a_snake_pieces[a_snake_pieces.size() - 1].get());
                 a_snake_pieces.pop_back();
             }
 
@@ -380,7 +380,7 @@ namespace scls {
                     else {
                         a_snake_pieces[total_pieces]->texture()->set_image(0);
                     }
-                    move_object(a_snake_pieces[total_pieces], current_snake->pieces_x()[i], current_snake->pieces_y()[i]);
+                    move_object(a_snake_pieces[total_pieces].get(), current_snake->pieces_x()[i], current_snake->pieces_y()[i]);
                     total_pieces++;
                 }
             }

@@ -1,6 +1,6 @@
 //******************
 //
-// main.cpp
+// scls_demo_raycast.cpp
 //
 //******************
 // Presentation :
@@ -10,7 +10,7 @@
 //
 // The "Demo" part is a part full of demonstrations for SCLS.
 //
-// This file contains the main function for the program.
+// This file contains the source code of scls_demo_raycast.h.
 //
 //******************
 //
@@ -23,13 +23,23 @@
 // You should have received a copy of the GNU General Public License along with SCLS. If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "raycast/scls_demo_raycast.h"
+// Include SCLS library
+#include "scls_demo_raycast.h"
 
-SCLS_INIT
+// Using of the "scls" namespace to simplify the programmation
+namespace scls {
+    namespace demo {
+        // Use the Raycast window
+        void use_raycast(int window_width, int window_height, std::string exec_path) {
+            std::unique_ptr<__Temp_Window> raycast = std::make_unique<__Temp_Window>(window_width, window_height, exec_path);
 
-int main(int argc, char* argv[]) {
-    scls::demo::use_raycast(500, 500, argv[0]);
-    //scls::demo::use_snake(540, 960, argv[0]);
+            // Execution loop
+            while(raycast.get()->run()) {
+                raycast.get()->update_event();
+                raycast.get()->update();
 
-    return 0;
+                raycast.get()->render();
+            }
+        }
+    }
 }

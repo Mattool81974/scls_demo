@@ -27,7 +27,7 @@
 #define SCLS_DEMO_SNAKE
 
 // Include SCLS library
-#include "../../../scls-3d-margaret/headers/scls_3d_engine.h"
+#include "../../scls-graphic-benoit/scls_graphic.h"
 
 // Using of the "scls" namespace to simplify the programmation
 namespace scls {
@@ -103,7 +103,7 @@ namespace scls {
             // Time of the last move
             double a_last_move_time = 0;
             // Speed of the snake, in case per second
-            unsigned short a_speed = 50;
+            unsigned short a_speed = 10;
             // If the snake use a cheat or not
             bool a_use_cheat = false;
             // X position of the snake
@@ -144,7 +144,7 @@ namespace scls {
             //*********
 
             // Snake_Object constructor
-            Snake_Object(Window& window, std::string name, GUI_Object* parent);
+            Snake_Object(_Window_Advanced_Struct& window, std::string name, GUI_Object* parent);
 
             // Getters and setters
             inline void set_type(const std::string& new_type) {a_type = new_type;};
@@ -181,7 +181,7 @@ namespace scls {
             //*********
 
             // Snake_Piece constructor
-            Snake_Piece(Window& window, std::string name, GUI_Object* parent);
+            Snake_Piece(_Window_Advanced_Struct& window, std::string name, GUI_Object* parent);
         };
 
         //*********
@@ -278,11 +278,11 @@ namespace scls {
             // Size of the inner line
             unsigned char a_inner_line_width = 1;
             // Aster system logo
-            GUI_Object* a_logo = 0;
+            std::shared_ptr<GUI_Object> a_logo;
             // Death text for the snake
-            GUI_Text* a_lose_text = 0;
+            std::shared_ptr<GUI_Text> a_lose_text = 0;
             // Each other objects in the grid
-            std::vector<Snake_Object*> a_objects = std::vector<Snake_Object*>();
+            std::vector<std::shared_ptr<Snake_Object>> a_objects = std::vector<std::shared_ptr<Snake_Object>>();
             // Number of objects created
             unsigned int a_objects_created = 0;
             // Size of the outer line
@@ -290,13 +290,13 @@ namespace scls {
             // Number of pieces created
             unsigned int a_pieces_created = 0;
             // Playground of the game
-            GUI_Object* a_playground = 0;
+            std::shared_ptr<GUI_Object> a_playground = 0;
             // Reset button for the snake
-            GUI_Text* a_restart_button = 0;
+            std::shared_ptr<GUI_Text> a_restart_button = 0;
             // Score of the snake
-            GUI_Text* a_score = 0;
+            std::shared_ptr<GUI_Text> a_score = 0;
             // Each pieces of snakes
-            std::vector<Snake_Piece*> a_snake_pieces = std::vector<Snake_Piece*>();
+            std::vector<std::shared_ptr<Snake_Piece>> a_snake_pieces = std::vector<std::shared_ptr<Snake_Piece>>();
 
             // Texture of the bottom of the head of the snake
             std::shared_ptr<Image> a_bottom_snake_head_texture = std::shared_ptr<Image>();
