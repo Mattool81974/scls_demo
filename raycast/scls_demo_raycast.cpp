@@ -29,15 +29,184 @@
 // Using of the "scls" namespace to simplify the programmation
 namespace scls {
     namespace demo {
+        // Fill the map with the needed cases
+        void Raycast_Map::fill_map(int width, int height) {
+            a_cases.clear();
+
+            // Create each cases
+            for(int i = 0;i<static_cast<int>(height);i++) {
+                std::vector<Case> current_column;
+                for(int j = 0;j<static_cast<int>(width);j++) {
+                    Case new_case;
+                    current_column.push_back(new_case);
+                } a_cases.push_back(current_column);
+            }
+        }
+
+        // Loads the map from a text
+        void Raycast_Map::load_from_text(std::string text) {
+            a_cases.clear();
+
+            // Cut the text as needed
+            std::vector<std::string> lines = scls::cut_string(text, "-");
+            for(int i = 0;i<static_cast<int>(lines.size());i++) {
+                std::vector<std::string> column = scls::cut_string(lines[i], ";");
+                std::vector<Case> current_column;
+                for(int j = 0;j<static_cast<int>(column.size());j++) {
+                    Case new_case; new_case.set_number(std::stoi(column[j]));
+                    current_column.push_back(new_case);
+                } a_cases.push_back(current_column);
+            }
+        }
+
+        //*********
+        //
+        // Raycast handling
+        //
+        //*********
+
+        // Does a raycast in the map
+        Raycast_Map::Raycast Raycast_Map::raycast(double start_x, double start_y, double angle_in_radian) {
+            // Calculate the needed datas
+            bool continue_horizontal = true; bool continue_vertical = true;
+            double cos_angle = std::cos(angle_in_radian); double sin_angle = std::sin(angle_in_radian);
+            double horizontal_advance = 1;
+            double horizontal_ratio = sin_angle / cos_angle;
+            double horizontal_x = 0; double horizontal_y = 0;
+            double vertical_advance = 1;
+            double vertical_ratio = cos_angle / sin_angle;
+            double vertical_x = 0; double vertical_y = 0;
+
+            // Do the Raycast horizontally (through vertical lines, the rays are horizontal)
+            double current_x = start_x;
+            double current_y = start_y;
+            double to_add = start_x - floor(start_x);
+            current_y += horizontal_ratio * to_add;
+            while(continue_horizontal) {
+                // Advance the ray
+                current_x += horizontal_advance;
+                current_y += horizontal_ratio;
+
+                // See if the ray must be stopped
+                if((current_x < 0 || current_x >= width()) || (case_at(current_x, current_y)->number() != 0)) {
+                    continue_horizontal = false;
+                }
+            } horizontal_x = current_x; horizontal_y = current_y;
+
+            // Do the Raycast vertical (through horizontal lines, the rays are vertical)
+            current_x = start_x;
+            current_y = start_y;
+            to_add = start_y - floor(start_y);
+            current_x += vertical_ratio * to_add;
+            while(continue_vertical) {
+                // Advance the ray
+                current_x += vertical_ratio;
+                current_y += vertical_advance;
+
+                // See if the ray must be stopped
+                if((current_x < 0 || current_x >= width()) || (case_at(current_x, current_y)->number() != 0)) {
+                    continue_vertical = false;
+                }
+            } vertical_x = current_x; vertical_y = current_y;
+
+            // Prepare the result
+            double distance_horizontal = std::sqrt(std::pow(start_x - horizontal_x, 2) + std::pow(start_y - horizontal_y, 2));
+            double distance_vertical = std::sqrt(std::pow(start_x - vertical_x, 2) + std::pow(start_y - vertical_y, 2));
+            Raycast_Map::Raycast to_return;
+            return to_return;
+        }
+
+        //*********
+        //
+        // Raycast_Engine mains members
+        //
+        //*********
+
+        // Render the 2D part of the engine
+        std::shared_ptr<Image> Raycast_Engine::render_2d() {
+            std::shared_ptr<Image> to_return = std::make_shared<Image>(500, 500, scls::Color(255, 255, 255));
+
+            std::map<int, scls::Color> colors;
+            colors[0] = scls::Color(255, 255, 255);
+            colors[1] = scls::Color(255, 0, 0);
+            colors[2] = scls::Color(0, 255, 0);
+            colors[3] = scls::Color(0, 0, 255);
+
+            // Draw the current map
+            int case_height = to_return.get()->height() / current_map()->height();
+            int case_width = to_return.get()->width() / current_map()->width();
+            for(int i = 0;i<static_cast<int>(current_map()->height());i++) {
+                for(int j = 0;j<static_cast<int>(current_map()->width());j++) {
+                    to_return.get()->fill_rect(j * case_width, i * case_height, case_width, case_height, colors[current_map()->case_at(i, j)->number()]);
+                }
+            }
+
+            // Draw the delimitations
+            int delimitation_width = 2;
+            for(int i = 0;i<static_cast<int>(current_map()->width()) + 1;i++) {
+                to_return.get()->fill_rect(i * case_width - delimitation_width / 2.0, 0, delimitation_width, to_return.get()->height(), scls::Color(0, 0, 0));
+            }
+            for(int i = 0;i<static_cast<int>(current_map()->height()) + 1;i++) {
+                to_return.get()->fill_rect(0, i * case_height - delimitation_width / 2.0, to_return.get()->width(), delimitation_width, scls::Color(0, 0, 0));
+            }
+
+            // Draw the camera
+            double camera_width = case_width / 2.0;
+            double camera_x = a_camera.x();
+            double camera_y = a_camera.y();
+            to_return.get()->fill_rect(camera_x * case_width - (camera_width / 2.0), camera_y * case_height - (camera_width / 2.0), camera_width, camera_width, scls::Color(0, 128, 255));
+
+            // Take a screenshot
+            if(window_struct()->key_pressed_during_this_frame("p")) {to_return.get()->save_png("tests/map_2d.png");}
+
+            return to_return;
+        }
+
+        // Update the camera in the engine
+        void Raycast_Engine::update_camera() {
+            if(window_struct()->key_state("s") == scls::Key_State::Pressed) {a_camera.set_y(a_camera.y() + window_struct()->delta_time());}
+            if(window_struct()->key_state("z") == scls::Key_State::Pressed) {a_camera.set_y(a_camera.y() - window_struct()->delta_time());}
+            if(window_struct()->key_state("q") == scls::Key_State::Pressed) {a_camera.set_x(a_camera.x() - window_struct()->delta_time());}
+            if(window_struct()->key_state("d") == scls::Key_State::Pressed) {a_camera.set_x(a_camera.x() + window_struct()->delta_time());}
+        }
+
         // Use the Raycast window
         void use_raycast(int window_width, int window_height, std::string exec_path) {
             std::unique_ptr<__Temp_Window> raycast = std::make_unique<__Temp_Window>(window_width, window_height, exec_path);
 
+            // Create the needed page
+            std::shared_ptr<GUI_Page> page = *raycast.get()->new_page_2d<GUI_Page>("raycast");
+            raycast.get()->display_page_2d("raycast");
+
+            // Create the engine
+            Raycast_Engine engine(raycast.get());
+            std::shared_ptr<Raycast_Map> map_1 = engine.new_map();
+            // Create the map
+            std::string needed_text = "";
+            needed_text += "0;0;0;0;1;0;0;0;0;0-";
+            needed_text += "0;0;0;0;1;0;0;0;0;0-";
+            needed_text += "0;0;0;0;1;0;0;0;0;0-";
+            needed_text += "0;1;1;1;1;0;1;1;1;0-";
+            needed_text += "0;0;0;0;0;0;1;0;0;0-";
+            needed_text += "0;0;0;0;0;0;1;0;0;0-";
+            needed_text += "0;1;1;1;1;0;1;1;1;0-";
+            needed_text += "0;0;0;0;1;0;0;0;0;0-";
+            needed_text += "0;0;0;0;1;0;0;0;0;0-";
+            needed_text += "0;0;0;0;1;0;0;0;0;0";
+            map_1.get()->load_from_text(needed_text);
+            engine.set_current_map_shared_ptr(map_1);
+
             // Execution loop
             while(raycast.get()->run()) {
                 raycast.get()->update_event();
-                raycast.get()->update();
 
+                // Render the raycast
+                engine.update_camera();
+                std::shared_ptr<Image> img = engine.render_2d();
+                page.get()->parent_object()->texture()->set_image(img);
+                img.reset();
+
+                raycast.get()->update();
                 raycast.get()->render();
             }
         }
