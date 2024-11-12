@@ -73,7 +73,7 @@ namespace scls {
             // Create a Raycast_Map
             Raycast_Map(){};
             // Returns the case at a certain position
-            inline Case* case_at(int x, int y) {if(x<0||y<0)return 0;return &a_cases[x][y]; };
+            inline Case* case_at(int x, int y) {if(x<0||y<0)return 0;return &a_cases[y][x]; };
             // Fills the map with the needed cases
             void fill_map(int width, int height);
             // Loads the map from a text
@@ -81,8 +81,8 @@ namespace scls {
 
             // Getters and setters
             inline const std::vector<std::vector<Case>>& cases() const {return a_cases;};
-            inline int height() const {return a_cases.size();};
-            inline int width() const {if(a_cases.size()<=0)return 0;return a_cases.at(0).size();};
+            inline int height() const {if(a_cases.size()<=0)return 0;return a_cases.at(0).size();};
+            inline int width() const {return a_cases.size();};
 
             //*********
             //
@@ -95,10 +95,22 @@ namespace scls {
             public:
                 // Raycast constructor
                 Raycast(){};
+
+                // Getters and setters
+                inline double collision_x() const {return a_collision_x;};
+                inline double collision_y() const {return a_collision_y;};
+                inline void set_collision_x(double new_collision_x){a_collision_x = new_collision_x;};
+                inline void set_collision_y(double new_collision_y){a_collision_y = new_collision_y;};
+
+            private:
+                // X position of the collision
+                double a_collision_x = 0;
+                // Y position of the collision
+                double a_collision_y = 0;
             };
 
             // Does a raycast in the map
-            Raycast raycast(double start_x, double start_y, double angle_in_radian);
+            Raycast raycast(double start_x, double start_y, double angle_in_degrees);
 
         public:
             // Each cases of the Map
@@ -122,7 +134,7 @@ namespace scls {
             //*********
 
             // Create a Raycast_Engine
-            Raycast_Engine(scls::Window* window_struct):a_window_struct(window_struct){};
+            Raycast_Engine(scls::Window* window_struct):a_window_struct(window_struct){a_camera.set_x(0.5);a_camera.set_y(0.5);};
 
             // Create a new map in the engine
             inline std::shared_ptr<Raycast_Map> new_map(){std::shared_ptr<Raycast_Map> current_map = std::make_shared<Raycast_Map>();a_maps.push_back(current_map);return current_map;};

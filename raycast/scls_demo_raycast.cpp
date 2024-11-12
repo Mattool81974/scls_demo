@@ -66,46 +66,73 @@ namespace scls {
         //*********
 
         // Does a raycast in the map
-        Raycast_Map::Raycast Raycast_Map::raycast(double start_x, double start_y, double angle_in_radian) {
+        Raycast_Map::Raycast Raycast_Map::raycast(double start_x, double start_y, double angle_in_degrees) {
             // Calculate the needed datas
+            double angle_in_radians = (angle_in_degrees / 180.0) * SCLS_PI;
             bool continue_horizontal = true; bool continue_vertical = true;
-            double cos_angle = std::cos(angle_in_radian); double sin_angle = std::sin(angle_in_radian);
+            double cos_angle = std::cos(angle_in_radians); double sin_angle = std::sin(angle_in_radians);
+            if(cos_angle == 0) cos_angle = 0.000001; if(sin_angle == 0) sin_angle = 0.000001;
             double horizontal_advance = 1;
-            double horizontal_ratio = sin_angle / cos_angle;
+            if(cos_angle < 0) horizontal_advance = -1;
+            double horizontal_ratio = std::abs(sin_angle / cos_angle);
+            if(sin_angle < 0) horizontal_ratio = -horizontal_ratio;
             double horizontal_x = 0; double horizontal_y = 0;
             double vertical_advance = 1;
-            double vertical_ratio = cos_angle / sin_angle;
+            if(sin_angle < 0) vertical_advance = -1;
+            double vertical_ratio = std::abs(cos_angle / sin_angle);
+            if(cos_angle < 0) vertical_ratio = -vertical_ratio;
             double vertical_x = 0; double vertical_y = 0;
 
             // Do the Raycast horizontally (through vertical lines, the rays are horizontal)
-            double current_x = start_x;
             double current_y = start_y;
-            double to_add = start_x - floor(start_x);
+            double to_add = std::ceil(start_x) - start_x;
+            if(horizontal_advance < 0) to_add = start_x - std::floor(start_x);
+            double current_x = std::ceil(start_x);
+            if(horizontal_advance < 0) current_x = std::floor(start_x);
             current_y += horizontal_ratio * to_add;
-            while(continue_horizontal) {
-                // Advance the ray
-                current_x += horizontal_advance;
-                current_y += horizontal_ratio;
+            // First check
+            int used_x = current_x;
+            if(horizontal_advance < 0) used_x = current_x - 1;
+            int used_y = std::floor(current_y);
+            if(!((used_x < 0 || used_x >= width()) || (used_y < 0 || used_y >= height()) || (case_at(used_x, used_y)->number() != 0))) {
+                while(continue_horizontal) {
+                    // Advance the ray
+                    current_x += horizontal_advance;
+                    current_y += horizontal_ratio;
 
-                // See if the ray must be stopped
-                if((current_x < 0 || current_x >= width()) || (case_at(current_x, current_y)->number() != 0)) {
-                    continue_horizontal = false;
+                    // See if the ray must be stopped
+                    used_x = current_x;
+                    if(horizontal_advance < 0) used_x = current_x - 1;
+                    used_y = std::floor(current_y);
+                    if((used_x < 0 || used_x >= width()) || (used_y < 0 || used_y >= height()) || (case_at(used_x, used_y)->number() != 0)) {
+                        continue_horizontal = false;
+                    }
                 }
             } horizontal_x = current_x; horizontal_y = current_y;
 
             // Do the Raycast vertical (through horizontal lines, the rays are vertical)
             current_x = start_x;
-            current_y = start_y;
-            to_add = start_y - floor(start_y);
+            to_add = std::ceil(start_y) - start_y;
+            if(vertical_advance < 0) to_add = start_y - std::floor(start_y);
             current_x += vertical_ratio * to_add;
-            while(continue_vertical) {
-                // Advance the ray
-                current_x += vertical_ratio;
-                current_y += vertical_advance;
+            current_y = std::ceil(start_y);
+            // First check
+            used_x = std::floor(current_x);
+            used_y = current_y;
+            if(vertical_advance < 0) used_y = current_y - 1;
+            if(!((used_x < 0 || used_x >= width()) || (used_y < 0 || used_y >= height()) || (case_at(used_x, used_y)->number() != 0))) {
+                while(continue_vertical) {
+                    // Advance the ray
+                    current_x += vertical_ratio;
+                    current_y += vertical_advance;
 
-                // See if the ray must be stopped
-                if((current_x < 0 || current_x >= width()) || (case_at(current_x, current_y)->number() != 0)) {
-                    continue_vertical = false;
+                    // See if the ray must be stopped
+                    used_x = std::floor(current_x);
+                    used_y = current_y;
+                    if(vertical_advance < 0) used_y = current_y - 1;
+                    if((used_x < 0 || used_x >= width()) || (used_y < 0 || used_y >= height()) || (case_at(used_x, used_y)->number() != 0)) {
+                        continue_vertical = false;
+                    }
                 }
             } vertical_x = current_x; vertical_y = current_y;
 
@@ -113,6 +140,14 @@ namespace scls {
             double distance_horizontal = std::sqrt(std::pow(start_x - horizontal_x, 2) + std::pow(start_y - horizontal_y, 2));
             double distance_vertical = std::sqrt(std::pow(start_x - vertical_x, 2) + std::pow(start_y - vertical_y, 2));
             Raycast_Map::Raycast to_return;
+            // Chose the good collision
+            if(distance_horizontal < distance_vertical) {
+                to_return.set_collision_x(horizontal_x);
+                to_return.set_collision_y(horizontal_y);
+            } else {
+                to_return.set_collision_x(vertical_x);
+                to_return.set_collision_y(vertical_y);
+            }
             return to_return;
         }
 
@@ -137,7 +172,7 @@ namespace scls {
             int case_width = to_return.get()->width() / current_map()->width();
             for(int i = 0;i<static_cast<int>(current_map()->height());i++) {
                 for(int j = 0;j<static_cast<int>(current_map()->width());j++) {
-                    to_return.get()->fill_rect(j * case_width, i * case_height, case_width, case_height, colors[current_map()->case_at(i, j)->number()]);
+                    to_return.get()->fill_rect(j * case_width, i * case_height, case_width, case_height, colors[current_map()->case_at(j, i)->number()]);
                 }
             }
 
@@ -150,10 +185,16 @@ namespace scls {
                 to_return.get()->fill_rect(0, i * case_height - delimitation_width / 2.0, to_return.get()->width(), delimitation_width, scls::Color(0, 0, 0));
             }
 
-            // Draw the camera
+            // Calculate the datas for the camera
             double camera_width = case_width / 2.0;
             double camera_x = a_camera.x();
             double camera_y = a_camera.y();
+
+            // Draw the rays
+            Raycast_Map::Raycast result = current_map()->raycast(a_camera.x(), a_camera.y(), a_camera.rotation_y());
+            to_return.get()->draw_line(camera_x * case_width, camera_y * case_height, result.collision_x() * case_width, result.collision_y() * case_height, scls::Color(0, 0, 255));
+
+            // Draw the camera
             to_return.get()->fill_rect(camera_x * case_width - (camera_width / 2.0), camera_y * case_height - (camera_width / 2.0), camera_width, camera_width, scls::Color(0, 128, 255));
 
             // Take a screenshot
@@ -168,6 +209,9 @@ namespace scls {
             if(window_struct()->key_state("z") == scls::Key_State::Pressed) {a_camera.set_y(a_camera.y() - window_struct()->delta_time());}
             if(window_struct()->key_state("q") == scls::Key_State::Pressed) {a_camera.set_x(a_camera.x() - window_struct()->delta_time());}
             if(window_struct()->key_state("d") == scls::Key_State::Pressed) {a_camera.set_x(a_camera.x() + window_struct()->delta_time());}
+
+            if(window_struct()->key_state("a") == scls::Key_State::Pressed) {a_camera.set_rotation_y(a_camera.rotation_y() + window_struct()->delta_time() * 70);}
+            if(window_struct()->key_state("e") == scls::Key_State::Pressed) {a_camera.set_rotation_y(a_camera.rotation_y() - window_struct()->delta_time() * 70);}
         }
 
         // Use the Raycast window
